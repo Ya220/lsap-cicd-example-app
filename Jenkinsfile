@@ -20,7 +20,7 @@ pipeline {
             steps {
                 echo 'Running tests...'
                 // Use your project's test command (e.g., 'npm test', 'npm run test:ci')
-                sh 'npm test'
+                sh 'npm test -- --detectOpenHandles'
             }
         }
         
