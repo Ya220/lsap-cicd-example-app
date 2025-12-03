@@ -4,6 +4,7 @@
   "description": "A starter application for the NTU CI/CD workshop.",
   "main": "server.js",
   "scripts": {
+    "lint": "eslint .",
     "start": "node server.js",
     "test": "jest"
   },
