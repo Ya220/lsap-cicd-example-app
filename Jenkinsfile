@@ -38,7 +38,7 @@ pipeline {
                         { "name": "Student",   "value": "${env.STUDENT_NAME} (${env.STUDENT_ID})", "inline": false },
                         { "name": "Job",       "value": "${env.JOB_NAME}",                     "inline": true },
                         { "name": "Build #",   "value": "${env.BUILD_NUMBER}",                 "inline": true },
-                        { "name": "Branch",    "value": "${env.GIT_BRANCH}",                 "inline": true },
+                        { "name": "Branch",    "value": "${env.BRANCH_NAME}",                 "inline": true },
                         { "name": "Status",    "value": "${currentBuild.currentResult}",      "inline": true },
                         { "name": "Repository", "value": "${env.GIT_URL}",                     "inline": false }
                       ],
