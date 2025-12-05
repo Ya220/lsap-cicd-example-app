@@ -80,7 +80,7 @@ pipeline {
 
                     // 4. 部署：運行新的容器到 Port 8081
                     echo "Running new container: ${env.CONTAINER_NAME} on port ${env.STAGING_PORT}"
-                    sh "docker run -d --name ${env.CONTAINER_NAME} -p ${env.STAGING_PORT}:8080 ${fullImageName}"
+                    sh "docker run -d --name ${env.CONTAINER_NAME} -p ${env.STAGING_PORT}:3000 ${fullImageName}"
                     
                     // 等待容器啟動 (視應用程式啟動速度調整等待時間)
                     sh "sleep 5"
