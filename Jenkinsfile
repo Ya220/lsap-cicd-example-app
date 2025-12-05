@@ -25,18 +25,18 @@ pipeline {
     }
 
     stages {
-        stage('Static Analysis') {
-            steps {
-                sh 'npm install'           // 安裝 eslint
-                sh 'npm run lint'          // 執行 lint，失敗會直接中斷 pipeline
-            }
-        }
-
         stage('Checkout Source Code') {
             steps {
                 echo "Checking out Git branch: ${env.BRANCH_NAME}"
                 // 執行程式碼檢查
                 checkout scm
+            }
+        }
+
+        stage('Static Analysis') {
+            steps {
+                sh 'npm install'           // 安裝 eslint
+                sh 'npm run lint'          // 執行 lint，失敗會直接中斷 pipeline
             }
         }
 
