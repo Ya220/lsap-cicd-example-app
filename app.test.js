@@ -26,4 +26,11 @@ describe("API Endpoints", () => {
     expect(res.statusCode).toEqual(200);
     expect(res.text).toContain("Welcome to the CI/CD Workshop!");
   });
+
+  it("should return 200 and status ok for /health", async () => {
+    const res = await request(server).get("/health");
+    expect(res.statusCode).toEqual(200);
+    expect(res.body).toBeDefined();
+    expect(res.body.status).toEqual("ok");
+  });
 });

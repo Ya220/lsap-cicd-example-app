@@ -103,8 +103,9 @@ pipeline {
                     def healthCheckUrl = "http://localhost:${env.STAGING_PORT}/health"
                     
                     // 5. 驗證：對 /health 端點運行 curl
+                    // -f: 失敗時不輸出 HTML
                     // --retry 和 --retry-delay 增加穩定性，防止瞬時故障
-                    sh "curl --retry 5 --retry-delay 5 ${healthCheckUrl}"
+                    sh "curl --retry 5 --retry-delay 5 -f ${healthCheckUrl}"
                     
                     echo "Staging deployment verified successfully. Application is healthy."
                 }
