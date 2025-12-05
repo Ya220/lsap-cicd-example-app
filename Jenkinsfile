@@ -14,6 +14,14 @@ pipeline {
         STAGING_PORT = 8081
         // Docker Hub 認證 ID 
         DOCKER_CREDENTIAL_ID = 'docker-hub-credentials'
+        // Staging 環境配置
+        STAGING_CONTAINER = 'dev-app'
+        STAGING_PORT = 8081
+        // Production 環境配置
+        PROD_CONTAINER = 'prod-app'
+        PROD_PORT = 8082
+        // 用於 Promotion 的目標標籤，預設為空
+        TARGET_TAG = '' 
         DISCORD_WEBHOOK      = credentials('discord-webhook-url')     
         STUDENT_NAME         = '黃雋亞'
         STUDENT_ID           = 'B11705056'
@@ -42,6 +50,9 @@ pipeline {
 
         stage('Build & Push Docker Image (Staging)') {
             steps {
+                when { 
+                    branch 'dev' 
+                }
                 script {
                     // 使用 Jenkins 內建的 BUILD_NUMBER 變數來標記映像檔
                     def imageTag = "dev-${env.BUILD_NUMBER}"
@@ -67,6 +78,9 @@ pipeline {
 
         stage('Deploy Staging Environment') {
             steps {
+                when { 
+                    branch 'dev' 
+                }
                 script {
                     def imageTag = "dev-${env.BUILD_NUMBER}"
                     def fullImageName = "${env.DOCKER_HUB_USER}/${env.IMAGE_NAME}:${imageTag}"
@@ -97,6 +111,9 @@ pipeline {
         }
         
         stage('Verify Health Check') {
+            when { 
+                branch 'dev' 
+            }
             steps {
                 script {
                     echo "Verifying deployment using health check..."
@@ -112,11 +129,79 @@ pipeline {
             }
         }
         
-        stage('Next Step: Manual Promotion to Prod') {
+        stage('Read Deployment Configuration') {
+            when {
+                branch 'main'
+            }
             steps {
-                // 提示開發者或 QA 團隊 Staging 環境已就緒
-                echo "Staging environment (dev-${env.BUILD_NUMBER}) is ready on port ${env.STAGING_PORT}."
-                echo "After verification, manually trigger the 'Promote to Prod' job."
+                script {
+                    // 1. 讀取 Configuration (假設檔案名為 deploy.config)
+                    // 檔案內容應僅包含目標標籤，例如：dev-15
+                    env.TARGET_TAG = sh(returnStdout: true, script: "cat deploy.config").trim()
+                    echo "Read target deployment tag from deploy.config: ${env.TARGET_TAG}"
+                    
+                    if (env.TARGET_TAG == '') {
+                        error('deploy.config is empty or missing content.')
+                    }
+                    if (!env.TARGET_TAG.startsWith('dev-')) {
+                        echo "WARNING: Target tag ${env.TARGET_TAG} does not look like a verified staging tag (missing 'dev-'). Proceeding anyway."
+                    }
+                }
+            }
+        }
+        
+        stage('Artifact Promotion & Retag') {
+            when { 
+                branch 'main' 
+            }
+            steps {
+                script {
+                    def sourceImage = "${env.DOCKER_HUB_USER}/${env.IMAGE_NAME}:${env.TARGET_TAG}"
+                    def prodTag = "prod-${env.BUILD_NUMBER}"
+                    def targetImage = "${env.DOCKER_HUB_USER}/${env.IMAGE_NAME}:${prodTag}"
+                    
+                    echo "Promoting image ${sourceImage} to ${targetImage}"
+
+                    withCredentials([usernamePassword(credentialsId: env.DOCKER_CREDENTIAL_ID, passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+                        sh "echo \$DOCKER_PASSWORD | docker login -u \$DOCKER_USERNAME --password-stdin"
+                        
+                        // 2. Artifact Promotion: Pull, Retag, and Push
+                        echo "Pulling source image..."
+                        sh "docker pull ${sourceImage}"
+                        
+                        echo "Retagging image..."
+                        sh "docker tag ${sourceImage} ${targetImage}"
+                        
+                        echo "Pushing Production tag ${prodTag} to Docker Hub..."
+                        sh "docker push ${targetImage}"
+                        
+                        echo "Image successfully promoted and pushed with tag: ${prodTag}"
+                    }
+                }
+            }
+        }
+        
+        stage('Deploy Production') {
+            when {
+                branch 'main'
+            }
+            steps {
+                script {
+                    def prodTag = "prod-${env.BUILD_NUMBER}"
+                    def targetImage = "${env.DOCKER_HUB_USER}/${env.IMAGE_NAME}:${prodTag}"
+                    
+                    echo "Starting Production Deployment (GitOps Style)..."
+
+                    // 1. 清理：強制移除現有的 prod-app 容器
+                    echo "Cleaning up existing container: ${env.PROD_CONTAINER}"
+                    sh "docker rm -f ${env.PROD_CONTAINER} || true"
+
+                    // 2. 運行新的容器到 Port 8082
+                    echo "Running new container: ${env.PROD_CONTAINER} on port ${env.PROD_PORT}"
+                    sh "docker run -d --name ${env.PROD_CONTAINER} -p ${env.PROD_PORT}:8080 ${targetImage}"
+                    
+                    echo "Deployment complete. Production is running the promoted tag ${prodTag} on port ${env.PROD_PORT}"
+                }
             }
         }
     }
