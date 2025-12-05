@@ -84,6 +84,14 @@ pipeline {
                     
                     // 等待容器啟動 (視應用程式啟動速度調整等待時間)
                     sh "sleep 5"
+
+                    // === 增加的調試步驟 A：檢查容器狀態 ===
+                    echo "Checking container status..."
+                    sh "docker ps -a --filter name=${env.CONTAINER_NAME}"
+                    
+                    // === 增加的調試步驟 B：查看容器日誌 ===
+                    echo "Checking container logs for startup errors..."
+                    sh "docker logs ${env.CONTAINER_NAME}"
                 }
             }
         }
@@ -97,7 +105,7 @@ pipeline {
                     // 5. 驗證：對 /health 端點運行 curl
                     // -f: 失敗時不輸出 HTML，-s: 靜默模式
                     // --retry 和 --retry-delay 增加穩定性，防止瞬時故障
-                    sh "curl --retry 5 --retry-delay 5 -f -s ${healthCheckUrl}"
+                    sh "curl --retry 5 --retry-delay 5 -f  ${healthCheckUrl}"
                     
                     echo "Staging deployment verified successfully. Application is healthy."
                 }
