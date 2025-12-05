@@ -8,10 +8,6 @@ pipeline {
         DOCKER_HUB_USER = 'justin220'
         // Docker 映像檔名稱
         IMAGE_NAME = 'devops-app'
-        // Staging 環境的容器名稱
-        CONTAINER_NAME = 'dev-app'
-        // Staging 環境的埠號
-        STAGING_PORT = 8081
         // Docker Hub 認證 ID 
         DOCKER_CREDENTIAL_ID = 'docker-hub-credentials'
         // Staging 環境配置
@@ -89,23 +85,23 @@ pipeline {
                     
                     // 3. 清理：強制移除現有的 dev-app 容器
                     // 使用 || true 以防容器不存在時腳本失敗
-                    echo "Cleaning up existing container: ${env.CONTAINER_NAME}"
-                    sh "docker rm -f ${env.CONTAINER_NAME} || true"
+                    echo "Cleaning up existing container: ${env.STAGING_CONTAINER}"
+                    sh "docker rm -f ${env.STAGING_CONTAINER} || true"
 
                     // 4. 部署：運行新的容器到 Port 8081
-                    echo "Running new container: ${env.CONTAINER_NAME} on port ${env.STAGING_PORT}"
-                    sh "docker run -d --name ${env.CONTAINER_NAME} -p ${env.STAGING_PORT}:3000 ${fullImageName}"
+                    echo "Running new container: ${env.STAGING_CONTAINER} on port ${env.STAGING_PORT}"
+                    sh "docker run -d --name ${env.STAGING_CONTAINER} -p ${env.STAGING_PORT}:3000 ${fullImageName}"
                     
                     // 等待容器啟動 (視應用程式啟動速度調整等待時間)
                     sh "sleep 5"
 
                     // === 增加的調試步驟 A：檢查容器狀態 ===
                     echo "Checking container status..."
-                    sh "docker ps -a --filter name=${env.CONTAINER_NAME}"
+                    sh "docker ps -a --filter name=${env.STAGING_CONTAINER}"
                     
                     // === 增加的調試步驟 B：查看容器日誌 ===
                     echo "Checking container logs for startup errors..."
-                    sh "docker logs ${env.CONTAINER_NAME}"
+                    sh "docker logs ${env.STAGING_CONTAINER}"
                 }
             }
         }
