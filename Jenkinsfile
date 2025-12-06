@@ -132,11 +132,13 @@ pipeline {
                 script {
                     // 1. 讀取 Configuration (假設檔案名為 deploy.config)
                     // 檔案內容應僅包含目標標籤，例如：dev-15
-                    def configContent = sh(returnStdout: true, script: "cat deploy.config 2>/dev/null || echo ''").trim()
+                    sh "pwd && ls -la deploy.config"
+                    def configContent = sh(returnStdout: true, script: "cat deploy.config").trim()
                     env.TARGET_TAG = configContent
                     echo "Read target deployment tag from deploy.config: '${env.TARGET_TAG}'"
+                    echo "Content length: ${configContent.length()}"
                     
-                    if (!configContent || configContent == '') {
+                    if (!configContent || configContent.isEmpty()) {
                         error('deploy.config is empty or missing content.')
                     }
                     if (!configContent.startsWith('dev-')) {
