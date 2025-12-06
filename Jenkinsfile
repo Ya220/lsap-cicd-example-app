@@ -143,7 +143,10 @@ pipeline {
                     println("Tag length: " + tagContent.length())
                     
                     // 設置環境變量，確保正確序列化
-                    env.TARGET_TAG = tagContent.toString()
+                    // 透過 sh 方式來設置環境變量，避免 Groovy 序列化問題
+                    sh "echo TARGET_TAG=${tagContent} > deploy_tag.properties"
+                    // 將檔案中的變數載入到環境變數中
+                    load "deploy_tag.properties"
                     
                     if (tagContent == null || tagContent.isEmpty()) {
                         error('deploy.config is empty or missing content.')
