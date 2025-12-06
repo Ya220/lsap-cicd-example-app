@@ -136,12 +136,14 @@ pipeline {
                     
                     // 使用 readFile 而不是 sh 命令來讀取文件
                     String tagContent = readFile(file: 'deploy.config').replaceAll(/\s+$/, '')
-                    env.TARGET_TAG = tagContent
                     
                     echo "Read target deployment tag from deploy.config:"
                     echo tagContent
                     println("Tag content: " + tagContent)
                     println("Tag length: " + tagContent.length())
+                    
+                    // 設置環境變量，確保正確序列化
+                    env.TARGET_TAG = tagContent.toString()
                     
                     if (tagContent == null || tagContent.isEmpty()) {
                         error('deploy.config is empty or missing content.')
@@ -159,6 +161,9 @@ pipeline {
             }
             steps {
                 script {
+                    echo "DEBUG: TARGET_TAG = '${env.TARGET_TAG}'"
+                    println("DEBUG: TARGET_TAG from env = " + env.TARGET_TAG)
+                    
                     def sourceImage = "${env.DOCKER_HUB_USER}/${env.IMAGE_NAME}:${env.TARGET_TAG}"
                     def prodTag = "prod-${env.BUILD_NUMBER}"
                     def targetImage = "${env.DOCKER_HUB_USER}/${env.IMAGE_NAME}:${prodTag}"
