@@ -23,7 +23,6 @@ pipeline {
         STUDENT_ID           = 'B11705056'
     }
 
-    // 當推送到 'dev' 分支時才執行此流水線
     options {
         skipDefaultCheckout true // 避免使用預設 checkout，我們會在 Stage 內處理
     }
@@ -45,10 +44,10 @@ pipeline {
         }
 
         stage('Build & Push Docker Image (Staging)') {
+            when { 
+                branch 'dev' 
+            }
             steps {
-                when { 
-                    branch 'dev' 
-                }
                 script {
                     // 使用 Jenkins 內建的 BUILD_NUMBER 變數來標記映像檔
                     def imageTag = "dev-${env.BUILD_NUMBER}"
@@ -73,10 +72,10 @@ pipeline {
         }
 
         stage('Deploy Staging Environment') {
+            when { 
+                branch 'dev' 
+            }
             steps {
-                when { 
-                    branch 'dev' 
-                }
                 script {
                     def imageTag = "dev-${env.BUILD_NUMBER}"
                     def fullImageName = "${env.DOCKER_HUB_USER}/${env.IMAGE_NAME}:${imageTag}"
