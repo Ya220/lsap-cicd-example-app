@@ -130,31 +130,25 @@ pipeline {
             }
             steps {
                 script {
-                    // 1. 讀取 Configuration (假設檔案名為 deploy.config)
-                    // 檔案內容應僅包含目標標籤，例如：dev-15
-                    sh "pwd && ls -la deploy.config && cat deploy.config | od -c"
+                    // 確保檔案存在和內容正確
+                    sh "pwd && ls -la deploy.config && cat deploy.config"
                     
-                    // 使用 readFile 而不是 sh 命令來讀取文件
-                    String tagContent = readFile(file: 'deploy.config').replaceAll(/\s+$/, '')
+                    // 1. 使用 readFile 讀取原始標籤內容
+                    String tagContent = readFile(file: 'deploy.config').trim() // 使用 trim() 移除空白字元和換行符
                     
-                    echo "Read target deployment tag from deploy.config:"
-                    echo tagContent
-                    println("Tag content: " + tagContent)
-                    println("Tag length: " + tagContent.length())
+                    echo "Read target deployment tag from deploy.config: ${tagContent}"
                     
-                    // 設置環境變量，確保正確序列化
-                    //env.TARGET_TAG = (String) tagContent
-                    // 透過 sh 方式來設置環境變量，避免 Groovy 序列化問題
-                    sh "echo TARGET_TAG=${tagContent} > deploy_tag.groovy"
-                    // 將檔案中的變數載入到環境變數中
-                    load "deploy_tag.groovy"
-
-                    if (tagContent == null || tagContent.isEmpty()) {
+                    // 2. 將讀取到的內容直接賦值給環境變數，使用 (String) 強制轉換
+                    //    這是解決跨 Stage 序列化問題的最佳方法。
+                    env.TARGET_TAG = (String) tagContent
+                    
+                    // 進行檢查
+                    if (env.TARGET_TAG == null || env.TARGET_TAG.isEmpty()) {
                         error('deploy.config is empty or missing content.')
                     }
-                    if (!tagContent.startsWith('dev-')) {
-                        echo "WARNING: Target tag does not look like a verified staging tag (missing 'dev-'). Proceeding anyway."
-                    }
+                    // ... 後續的檢查邏輯 ...
+                    
+                    echo "Successfully set env.TARGET_TAG to: ${env.TARGET_TAG}"
                 }
             }
         }
