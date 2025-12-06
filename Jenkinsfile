@@ -133,16 +133,19 @@ pipeline {
                     // 1. 讀取 Configuration (假設檔案名為 deploy.config)
                     // 檔案內容應僅包含目標標籤，例如：dev-15
                     sh "pwd && ls -la deploy.config"
-                    def configContent = sh(returnStdout: true, script: "cat deploy.config").trim()
-                    env.TARGET_TAG = configContent
-                    echo "Read target deployment tag from deploy.config: '${env.TARGET_TAG}'"
-                    echo "Content length: ${configContent.length()}"
                     
-                    if (!configContent || configContent.isEmpty()) {
+                    // 使用 readFile 而不是 sh 命令來讀取文件
+                    def fileContent = readFile(file: 'deploy.config').replaceAll(/\s+$/, '')
+                    env.TARGET_TAG = fileContent
+                    echo "Read target deployment tag from deploy.config: '${env.TARGET_TAG}'"
+                    echo "Content length: ${fileContent.length()}"
+                    echo "Content bytes: ${fileContent.getBytes()}"
+                    
+                    if (!fileContent || fileContent.isEmpty()) {
                         error('deploy.config is empty or missing content.')
                     }
-                    if (!configContent.startsWith('dev-')) {
-                        echo "WARNING: Target tag ${configContent} does not look like a verified staging tag (missing 'dev-'). Proceeding anyway."
+                    if (!fileContent.startsWith('dev-')) {
+                        echo "WARNING: Target tag ${fileContent} does not look like a verified staging tag (missing 'dev-'). Proceeding anyway."
                     }
                 }
             }
