@@ -204,7 +204,7 @@ pipeline {
 
                     // 2. 運行新的容器到 Port 8082
                     echo "Running new container: ${env.PROD_CONTAINER} on port ${env.PROD_PORT}"
-                    sh "docker run -d --name ${env.PROD_CONTAINER} -p ${env.PROD_PORT}:8080 ${targetImage}"
+                    sh "docker run -d --name ${env.PROD_CONTAINER} -p ${env.PROD_PORT}:3000 ${targetImage}"
                     
                     echo "Deployment complete. Production is running the promoted tag ${prodTag} on port ${env.PROD_PORT}"
                 }
