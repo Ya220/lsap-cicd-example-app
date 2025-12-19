@@ -30,9 +30,21 @@ pipeline {
     stages {
         stage('Checkout Source Code') {
             steps {
-                echo "Checking out Git branch: ${env.BRANCH_NAME}"
-                // 執行程式碼檢查
-                checkout scm
+                script {
+                    echo "Checking out Git branch: ${env.BRANCH_NAME}"
+                    // 執行程式碼檢查
+                    checkout scm
+
+                    // 確保 env.GIT_URL 在後續 stage / post 區塊中可用
+                    // 優先從 scm 物件取得 URL，若失敗則使用 git 指令回退
+                    try {
+                        env.GIT_URL = scm.getUserRemoteConfigs()[0].getUrl()
+                    } catch (err) {
+                        env.GIT_URL = sh(script: "git config --get remote.origin.url || echo 'unknown'", returnStdout: true).trim()
+                    }
+
+                    echo "Set GIT_URL to: ${env.GIT_URL}"
+                }
             }
         }
 
@@ -218,6 +230,12 @@ pipeline {
         }
         failure {
             script {
+                // 在通知時確保有一個合理的 Repository 值（先用 env.GIT_URL，沒有時退回到 git 指令或 'unknown'）
+                def gitRepo = env.GIT_URL
+                 if (gitRepo == null || gitRepo.trim() == '') {
+                    gitRepo = sh(script: "git config --get remote.origin.url || echo 'unknown'", returnStdout: true).trim()
+                }
+
                 def embed = """
                 {
                   "username": "Jenkins CI",
@@ -232,7 +250,7 @@ pipeline {
                         { "name": "Build #",   "value": "${env.BUILD_NUMBER}",                 "inline": true },
                         { "name": "Branch",    "value": "${env.BRANCH_NAME}",                 "inline": true },
                         { "name": "Status",    "value": "${currentBuild.currentResult}",      "inline": true },
-                        { "name": "Repository", "value": "${env.GIT_URL}",                     "inline": false }
+                        { "name": "Repository", "value": "${gitRepo}",                     "inline": false }
                       ],
                       "timestamp": "${new Date(currentBuild.startTimeInMillis).format("yyyy-MM-dd'T'HH:mm:ss'Z'", TimeZone.getTimeZone('UTC'))}"
                     }
